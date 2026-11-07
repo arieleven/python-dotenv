@@ -948,3 +948,25 @@ def test_dotenv_values_empty_value_with_inline_comment(string, expected):
     result = dotenv.dotenv_values(stream=io.StringIO(string))
 
     assert result == expected
+
+
+@pytest.mark.parametrize(
+    "string,line",
+    [
+        ("a: b", 1),
+        ("a=b\na: c", 2),
+        ("a=b\n\n\nc: d\n", 4),
+        ("\n\na: b", 3),
+        ("a=b\r\n  \r\n\tc: d", 3),
+        ("# comment\n\na: b", 3),
+    ],
+)
+def test_invalid_line_warning_names_the_statement_line(string, line):
+    logger = logging.getLogger("dotenv.main")
+
+    with mock.patch.object(logger, "warning") as mock_warning:
+        dotenv.dotenv_values(stream=io.StringIO(string))
+
+    mock_warning.assert_called_once_with(
+        "python-dotenv could not parse statement starting at line %s", line
+    )
